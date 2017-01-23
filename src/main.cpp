@@ -43,6 +43,10 @@ int y = 0;
 // Variable de control de la detección de cara
 bool detected = false;
 
+// Definición de los margenes máximos y mínimos del Tilt
+const int MAX_TILT = 135;
+const int MIN_TILT = 45;
+
 // Bloque principal
 int main(int argc, char **argv)
 {
@@ -107,7 +111,6 @@ int main(int argc, char **argv)
 
     while(1)
     {
-        std::cout << "vuelta!!\n";
         // Se captura el tiempo de inicio del bucle
         reloj = clock();
 
@@ -217,7 +220,18 @@ int main(int argc, char **argv)
             // Se adapta la salida en X a grados, y se redondea a int
             degrees_X = 90 - static_cast<int>((xControl - 320) * DEGREE_ADJUST_X);
 
-            // Se envía el valor calculado al Arduino para que actualize la posición de rotación
+            // Se actualiza el valor para que no pase de 0 o 180
+            if(degrees_X > 180)
+            {
+                // Se fuerza el valor máximo
+                degrees_X = 180;
+            }
+
+            if(degrees_X < 0)
+            {
+                // Se fuerza el valor mínimo
+                degrees_X = 0;
+            }
            
             // Se imprime en la consola, en vez de en pantalla
             //std::cout << "El angulo a corregir en X: " << degrees_X << std::endl;
@@ -225,8 +239,24 @@ int main(int argc, char **argv)
             // Se adapta la salida en Y a grados, y se redondea a int
             degrees_Y = 90 - static_cast<int>((yControl - 240) * DEGREE_ADJUST_Y);
 
+            // Se actualiza el valor para que no pase de los valores definidos
+            // en los margenes
+            if(degrees_Y > MAX_TILT)
+            {
+                // Se fuerza el valor máximo
+                degrees_Y = MAX_TILT;
+            }
+
+            if(degrees_Y < MIN_TILT)
+            {
+                // Se fuerza el valor mínimo
+                degrees_Y = MIN_TILT;
+            }
+
+
             // Se envía el valor calculado al Arduino para que actualize la posición de inclinación
             
+
             // Define the array msg variable
             std_msgs::Int32MultiArray array;
 
@@ -241,6 +271,7 @@ int main(int argc, char **argv)
             // Lo printo en la consola, en vez de en pantalla
             //std::cout << "El angulo a corregir en Y: " << degrees_Y << std::endl;
         }
+
         // Ros
         ros::spinOnce();
         loop_rate.sleep();
@@ -256,7 +287,7 @@ void pointCallback(const geometry_msgs::Point::ConstPtr& point)
     geometry_msgs::Point new_point = *point;
     x = static_cast<int>(new_point.x);
     y = static_cast<int>(new_point.y);
-    if(x == 1000 && y == 1000)
+    if(x >= 1000 && y >= 1000)
     {
         // There is no face detected
         detected = false;
@@ -266,6 +297,8 @@ void pointCallback(const geometry_msgs::Point::ConstPtr& point)
         detected = true;
     }
 
+    // Prueba de envio de comandos
+    std::cout << "El valor de x es : " << x << " y de y: " << y << std::endl;
     // Habilitate the control
     dataReceived = true;   
 }
