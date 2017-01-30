@@ -93,10 +93,15 @@ int main(int argc, char **argv)
     float outputController_Y = 0.0f;
 
     // Variable para guardar el periodo, que variará dependiendo de lo que tarde en ejecutar el código
-    float samplePeriod = 0.0f;
+    //float samplePeriod = 0.0f;
 
     // Variables para el cálculo del tiempo
-    clock_t reloj;
+    //clock_t reloj;
+    ros::Time current_time, last_time;
+
+    // Init time
+    current_time = ros::Time::now();
+    last_time = current_time;
 
     // Variable de control de los grados de giro o yaw
     int degrees_X = 0; // se inicializa como 0
@@ -109,18 +114,13 @@ int main(int argc, char **argv)
     int yaw = 120;
 
 
-    while(1)
+    while(ros::ok())
     {
         // Se captura el tiempo de inicio del bucle
-        reloj = clock();
-
-        // Se calcula el tiempo que ha pasado entre el principio del bucle y se imprime
-        // por pantalla los frames por segundo
-        reloj = clock() - reloj;
-        //std::cout << "\rEl tiempo que ha pasado es " << (static_cast<float>(reloj) / CLOCKS_PER_SEC) << " se ha detectado objeto = " << detected << std::flush;
+        current_time   = ros::Time::now();
 
         // Se actualiza el valor del periodo de muestreo
-        samplePeriod = static_cast<float>(reloj) / CLOCKS_PER_SEC;
+        double samplePeriod = (current_time - last_time).toSec();
 
         if(dataReceived)
         {
@@ -213,7 +213,6 @@ int main(int argc, char **argv)
                 errorAnt_Y = errorAct_Y;
             }
 
-
             // Se ajusta el error en grados, tanto en X como en Y
             // Esta parte del código será la que mueva el motor
 
@@ -233,8 +232,6 @@ int main(int argc, char **argv)
                 degrees_X = 0;
             }
            
-            // Se imprime en la consola, en vez de en pantalla
-            //std::cout << "El angulo a corregir en X: " << degrees_X << std::endl;
 
             // Se adapta la salida en Y a grados, y se redondea a int
             degrees_Y = 90 - static_cast<int>((yControl - 240) * DEGREE_ADJUST_Y);
@@ -254,6 +251,9 @@ int main(int argc, char **argv)
             }
 
 
+            // Se imprime el resultado
+            std::cout << "Degrees X: " << degrees_X << " Degrees_Y: " << degrees_Y << std::endl;
+
             // Se envía el valor calculado al Arduino para que actualize la posición de inclinación
             
 
@@ -271,6 +271,9 @@ int main(int argc, char **argv)
             // Lo printo en la consola, en vez de en pantalla
             //std::cout << "El angulo a corregir en Y: " << degrees_Y << std::endl;
         }
+
+        // Update the timer
+        last_time = current_time;
 
         // Ros
         ros::spinOnce();
@@ -298,7 +301,7 @@ void pointCallback(const geometry_msgs::Point::ConstPtr& point)
     }
 
     // Prueba de envio de comandos
-    std::cout << "El valor de x es : " << x << " y de y: " << y << std::endl;
+    //std::cout << "El valor de x es : " << x << " y de y: " << y << std::endl;
     // Habilitate the control
     dataReceived = true;   
 }
