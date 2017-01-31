@@ -26,6 +26,9 @@
 #include "std_msgs/MultiArrayDimension.h"
 #include "std_msgs/Int32MultiArray.h"
 
+// Test
+#include <std_msgs/Int32.h>
+
 // Prototype of the functions
 void PanAndTiltValues(const std_msgs::Int32MultiArray& array);
 void ServoPosition(int yaw, int Pitch);
@@ -34,6 +37,11 @@ void ServoPosition(int yaw, int Pitch);
 ros::NodeHandle nh;
 // Subscriber definition
 ros::Subscriber<std_msgs::Int32MultiArray> sub("PAT", PanAndTiltValues);
+// Test
+// Publisher description
+std_msgs::Int32 str_msg;
+ros::Publisher chatter("chatter", &str_msg);
+int yaw, pitch;
 
 // Define the update period
 const unsigned int period = 20;
@@ -52,6 +60,8 @@ void setup()
   nh.initNode();
   // Associate the subscriber to the function
   nh.subscribe(sub);
+  // test
+  nh.advertise(chatter);
 
   // Link the servos to their pins
   servoYaw.attach(YawPin);
@@ -67,6 +77,9 @@ void loop()
 {
   // Wait for new messages
   // spin (ros sync and attend callbacks, if any ...)
+  str_msg.data = yaw;
+  chatter.publish( &str_msg );
+  
   nh.spinOnce();
   
   //relax
@@ -87,7 +100,7 @@ void ServoPosition(int yaw, int Pitch)
 void PanAndTiltValues(const std_msgs::Int32MultiArray& array)
 {
 
-  int yaw, pitch;
+  //int yaw, pitch;
 
   // Set the values
   yaw = array.data[0];
