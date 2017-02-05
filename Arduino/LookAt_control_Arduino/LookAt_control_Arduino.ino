@@ -70,7 +70,10 @@ void setup()
   // Init the servo position
   servoYaw.write(90);
   servoPitch.write(90);
-
+  
+  // Init yaw and pitch
+  yaw = 90;
+  pitch = 90;
 }
 
 void loop() 
