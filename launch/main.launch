@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<launch>
+  <param name="face_cascade_name" value="$(find lookat)/config/haarcascade_frontalface_alt.xml" />
+
+  <node 
+  	pkg="lookat" 
+  	type="lookat" 
+  	name="lookat" 
+  	output="screen">
+  </node>
+  <node 
+  	pkg="rosserial_python"
+    type="serial_node.py"
+    name="rosserial_arduino"
+    args="_port:=/dev/ttyACM1"
+    output="screen">
+  </node>
+</launch>

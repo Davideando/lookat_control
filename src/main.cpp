@@ -44,22 +44,19 @@ int y = 0;
 bool detected = false;
 
 // Definición de los margenes máximos y mínimos del Tilt
-const int MAX_TILT = 135;
-const int MIN_TILT = 45;
+const int MAX_TILT = 30;
+const int MIN_TILT = 100;
 
 // Bloque principal
 int main(int argc, char **argv)
 {
-    // Variables locales
-    int count = 5;
-
     // Ros Init
     ros::init(argc, argv, "LookAt_Control");
     ros::NodeHandle n;
 
     // Publisher to the Arduino board
     ros::Publisher Servo_pub = n.advertise<std_msgs::Int32MultiArray>("PAT", 1000);
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(25);
 
     // Subscriber to the detectface
     ros::Subscriber sub = n.subscribe("pointpub", 1000, pointCallback);
@@ -70,9 +67,9 @@ int main(int argc, char **argv)
     float yControl = HEIGHT / 2.0f;
 
     // Variables de control que serán las mismas para x e y.
-    float kProp = 0.2f; // Ganancia proporcional
+    float kProp = 0.1f; // Ganancia proporcional
     float kInt = 0.01f; // Ganancia integral
-    float kDeriv = 0.01f; // Ganancia derivativa
+    float kDeriv = 0.001f; // Ganancia derivativa
 
     // variables para los errores para X
     float errorAct_X = 0.0f;
@@ -109,21 +106,19 @@ int main(int argc, char **argv)
     // Variable de control de los grados de inclinación o pitch
     int degrees_Y = 0; // se inicializa en el 0
 
-    // Inicializo los valores de pitch y yaw
-    int pitch = 120;
-    int yaw = 120;
 
 
     while(ros::ok())
     {
-        // Se captura el tiempo de inicio del bucle
-        current_time   = ros::Time::now();
-
-        // Se actualiza el valor del periodo de muestreo
-        double samplePeriod = (current_time - last_time).toSec();
-
         if(dataReceived)
         {
+            // Se captura el tiempo de inicio del bucle
+            current_time   = ros::Time::now();
+
+            // Se actualiza el valor del periodo de muestreo
+            double samplePeriod = (current_time - last_time).toSec();
+            std::cout << "Sample time: " << samplePeriod << std::endl;
+
             dataReceived = false;   
             // Sistema de control 
             if (detected)
@@ -133,7 +128,7 @@ int main(int argc, char **argv)
                 // Se ejecuta el control para X
 
                 // Se ajusta el error actual
-                errorAct_X = x - xControl;
+                errorAct_X = x - (WIDTH/2);
 
                 // Se actualiza el error integral
                 errorAcum_X += errorAct_X;
@@ -152,14 +147,14 @@ int main(int argc, char **argv)
                 // Se ejecuta el control para Y
 
                 // Se ajusta el error actual
-                errorAct_Y = y - yControl;
+                errorAct_Y = y - (HEIGHT/2);
 
                 // Se actualiza el error integral
                 errorAcum_Y += errorAct_Y;
 
                 // Se calcula la salida del controlador
                 // u = Kp * error + Kint * Ts * errorAcumulado + Kder * (e - e(t-1))/Tsample
-                outputController_Y = kProp * errorAct_Y + kInt * samplePeriod * errorAcum_Y + (kDeriv * (errorAct_Y - errorAnt_Y)) / samplePeriod;
+                outputController_Y = kProp * errorAct_Y;// + kInt * samplePeriod * errorAcum_Y + (kDeriv * (errorAct_Y - errorAnt_Y)) / samplePeriod;
 
                 // Se actualiza el valor de la posición 
                 // Ysalida = Yactual + corrección en y
@@ -217,6 +212,7 @@ int main(int argc, char **argv)
             // Esta parte del código será la que mueva el motor
 
             // Se adapta la salida en X a grados, y se redondea a int
+            // El punto de reposo en X será a 90 grados.
             degrees_X = 90 - static_cast<int>((xControl - 320) * DEGREE_ADJUST_X);
 
             // Se actualiza el valor para que no pase de 0 o 180
@@ -234,17 +230,18 @@ int main(int argc, char **argv)
            
 
             // Se adapta la salida en Y a grados, y se redondea a int
-            degrees_Y = 90 - static_cast<int>((yControl - 240) * DEGREE_ADJUST_Y);
+            // El punto de reposo en y será a 115 grados
+            degrees_Y = 65 + static_cast<int>((yControl - 240) * DEGREE_ADJUST_Y);
 
             // Se actualiza el valor para que no pase de los valores definidos
             // en los margenes
-            if(degrees_Y > MAX_TILT)
+            if(degrees_Y < MAX_TILT)
             {
                 // Se fuerza el valor máximo
                 degrees_Y = MAX_TILT;
             }
 
-            if(degrees_Y < MIN_TILT)
+            if(degrees_Y > MIN_TILT)
             {
                 // Se fuerza el valor mínimo
                 degrees_Y = MIN_TILT;
@@ -253,6 +250,8 @@ int main(int argc, char **argv)
 
             // Se imprime el resultado
             std::cout << "Degrees X: " << degrees_X << " Degrees_Y: " << degrees_Y << std::endl;
+            std::cout << "X: " << x << " y el error " << errorAct_X;
+            std::cout << " Y: " << y <<  " y el error" << errorAct_Y << std::endl;
 
             // Se envía el valor calculado al Arduino para que actualize la posición de inclinación
             
@@ -264,6 +263,15 @@ int main(int argc, char **argv)
             array.data.clear();
 
             array.data.push_back(degrees_X);
+            /*if(yaw < 180)
+            {
+                array.data.push_back(yaw);
+                yaw++;
+            }
+            else
+            {
+                yaw = 0;
+            }*/
             array.data.push_back(degrees_Y);
 
             Servo_pub.publish(array);

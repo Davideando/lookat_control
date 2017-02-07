@@ -69,11 +69,12 @@ void setup()
   
   // Init the servo position
   servoYaw.write(90);
-  servoPitch.write(90);
+  servoPitch.write(65);
   
   // Init yaw and pitch
+  // Init values: Yaw in 90 degrees and Pitch in 115 Degrees
   yaw = 90;
-  pitch = 90;
+  pitch = 65;
 }
 
 void loop() 
@@ -86,7 +87,7 @@ void loop()
   nh.spinOnce();
   
   //relax
-  delay(period); 
+  //delay(period); 
 }
 
 // Servo update position function
